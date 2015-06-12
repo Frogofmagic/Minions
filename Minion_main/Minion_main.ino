@@ -6,7 +6,10 @@
 //    D12 = UART-RX connect to BLE-TX
 //    A4 to 9250 SDA
 //    A5 to 9250 SCL
-//    A0 to LED Signal.
+//    D3 to LED shake Signal & TG2 level hold trigger TH000.
+//    D4 to TG1 Edge unhold.
+//    D5 input to 鞠躬摺法觸發.
+//    小小兵橘色頭黃色線 鞠躬折法觸發
 //========================================================================================================//
 #include <SoftwareSerial.h>
 #include "mpu.h"
@@ -18,11 +21,14 @@
 #define pinDebug            2
 #define pinMoto             9
 #define pinLEDSignal        3     //D3
+#define pinOuchSignal       4     //D4
+#define pinOuchInput        5     //D5
 //========================================================================================================//
 
 int iMpuUpdateStatus;
 int iSystem_STATUS = 0;
 int iPackagecounter = 0;
+int iMinionSTATUS = 0;
 unsigned long time_last;
 unsigned int ucPWM_Counter;
 unsigned char ucShakecounter;
@@ -40,6 +46,10 @@ void setup() {
     
     pinMode(pinLEDSignal, OUTPUT);                     //Set pinLEDSignal output.
     digitalWrite(pinLEDSignal, LOW);                   //Set pinLEDSignal Low
+    pinMode(pinOuchSignal, OUTPUT);                    //Set pinOuchSignal output
+    digitalWrite(pinOuchSignal, LOW);                  //Set pinOuchSignal Low
+    
+    pinMode(pinOuchInput, INPUT_PULLUP);               //Set pinOuchInput Input&Low.
     
     uc5counter = 0;                                    //Clear counter.    
     ucShakecounter = 0;    
@@ -61,7 +71,27 @@ void setup() {
 int iReadfromBLE[4];
 
 void loop() {
-
+    int psOuchInput = digitalRead(pinOuchInput);        //Read OuchInput status.  
+    unsigned int uiDebounce = 0;
+    if(psOuchInput){                                    //1 = no Ouchinput.
+       
+    }else{                                              //0 = Ouchinput detect.
+        for(int i=0 ;i<10;i++){
+            if(!(digitalRead(pinOuchInput)))
+               uiDebounce++; 
+        }
+        if(uiDebounce>6){
+          digitalWrite(pinOuchSignal, HIGH);              //Start trigger THF16 to play Ouch!! 
+          delay(20); 
+          digitalWrite(pinOuchSignal, LOW);               //10ms H/L          digitalWrite(pinOuchSignal, HIGH);              //Start trigger THF16 to play Ouch!! 
+          delay(20); 
+          
+          iMinionSTATUS = 1;
+        }
+        while(!(digitalRead(pinOuchInput))){
+          
+        }
+    }
 
 }
 
@@ -76,7 +106,7 @@ void Timer2_INTERRUPT(){                //Read MPU Data every interrupt
         ucShakecounter++;   
     }
     if(uc5counter>=10){
-       if(ucShakecounter>8){
+       if((ucShakecounter>8) && (iMinionSTATUS==1)){
           digitalWrite(pinLEDSignal, HIGH);                   //Set pinLEDSignal Low
        }else{
           digitalWrite(pinLEDSignal, LOW);                   //Set pinLEDSignal Low
@@ -96,9 +126,9 @@ void Timer2_INTERRUPT(){                //Read MPU Data every interrupt
         //Serial.print(" Y: "); Serial.print(mympu.ypr[0]);
         //Serial.print(" P: "); Serial.print(mympu.ypr[1]);
         //Serial.print(" R: "); Serial.print(mympu.ypr[2]);
-        Serial.print("\tgy: "); Serial.print(mympu.gyro[0]);
-        Serial.print(" gp: "); Serial.print(mympu.gyro[1]);
-        Serial.print(" gr: "); Serial.println(mympu.gyro[2]);    
+        //Serial.print("\tgy: "); Serial.print(mympu.gyro[0]);
+        //Serial.print(" gp: "); Serial.print(mympu.gyro[1]);
+        //Serial.print(" gr: "); Serial.println(mympu.gyro[2]);    
     }         
 }
 
